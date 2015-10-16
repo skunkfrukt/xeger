@@ -1,29 +1,30 @@
 (function () {
 	
 	var ReverseRegexThing = function () {
-		this.regexRegex = /\\.|\((?:\?.)?|\)|\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+]|\{\d+(?:,\d+)?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$]+/g;
+		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$]+/g;
+		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.INFINITY = 100;
 		
 		this.parse = function (regex) {
-			var tokens = regex.match(this.regexRegex);
-			var structure = this.parseHelper(tokens, 0, 0);
+			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
+			var structure = this.parseStructure(tokens, 0, 0);
 			
 			return structure;
 		};
 		
-		this.parseHelper = function(tokenArray, startIndex, parenthesisLevel) {
+		this.parseStructure = function(tokenArray, startIndex, parenthesisLevel) {
 			var structure = [];
 			
 			for (var i = startIndex; i < tokenArray.length; i++) {
 				var token = tokenArray[i];
 				if (token[0] === "(") {
-					var innerStructure = this.parseHelper(tokenArray, i + 1, parenthesisLevel + 1);
+					var innerStructure = this.parseStructure(tokenArray, i + 1, parenthesisLevel + 1);
 					structure.push(innerStructure.structure);
 					i = innerStructure.lastIndex;
 				} else if (token === ")" && parenthesisLevel > 0) {
 					return {structure: structure, lastIndex: i};
 				} else {
-					var parsedToken = this.tokenParseHelper(token);
+					var parsedToken = this.parseToken(token);
 					if (parsedToken.tokenType === "multiplier") {
 						var modifiedToken = structure[structure.length - 1];
 						if (modifiedToken.tokenType === "literal" && modifiedToken.content.length > 1) {
@@ -46,12 +47,11 @@
 			return parenthesisLevel ? null : structure;
 		};
 		
-		this.tokenParseHelper = function (inToken) {
+		this.parseToken = function (inToken) {
 			var outToken = {};
 			if (inToken[0] === "[") {
-				outToken = this.bracketParseHelper(inToken);
+				outToken = this.parseBracketClass(inToken);
 			} else if (inToken[0] === "\\") {
-				outToken = this.escapeParseHelper(inToken);
 			} else if (inToken === "+") {
 				outToken.tokenType = "multiplier";
 				outToken.multiplicity = {min: 1, max: this.INFINITY};
@@ -68,6 +68,7 @@
 					min: numbers[0],
 					max: numbers.length > 1 ? numbers[1] : numbers[0]
 				};
+				outToken = this.parseEscapedCharacter(inToken);
 			} else if (inToken === "^") {
 				outToken.tokenType = "start";
 			} else if (inToken === "$") {
@@ -80,8 +81,8 @@
 			}
 			return outToken;
 		};
-		
-		this.bracketParseHelper = function (inToken) {
+
+		this.parseBracketClass = function (inToken) {
 			var outToken = {tokenType: "or", operands: []};
 			var startIndex = 1;
 			if (inToken[startIndex] === "^") {
@@ -109,7 +110,7 @@
 			return outToken;
 		};
 		
-		this.escapeParseHelper = function (inToken) {
+		this.parseEscapedCharacter = function (inToken) {
 			var outToken = {};
 			switch (inToken[1]) {
 				case "s":
@@ -131,8 +132,7 @@
 			return outToken;
 		};
 		
-		this.parseOutput = function ()
-		{
+		this.parseOutput = function () {
 			var regexString = document.getElementById("regex").value;
 			var regexStructure = this.parse(regexString);
 			window.debugStructure = regexStructure;
