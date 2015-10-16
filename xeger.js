@@ -2,6 +2,8 @@
 	
 	var ReverseRegexThing = function () {
 		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$]+/g;
+		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
+
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.INFINITY = 100;
 		
@@ -52,23 +54,9 @@
 			if (inToken[0] === "[") {
 				outToken = this.parseBracketClass(inToken);
 			} else if (inToken[0] === "\\") {
-			} else if (inToken === "+") {
-				outToken.tokenType = "multiplier";
-				outToken.multiplicity = {min: 1, max: this.INFINITY};
-			} else if (inToken === "?") {
-				outToken.tokenType = "multiplier";
-				outToken.multiplicity = {min: 0, max: 1};
-			} else if (inToken === "*") {
-				outToken.tokenType = "multiplier";
-				outToken.multiplicity = {min: 0, max: this.INFINITY};
-			} else if (inToken[0] === "{") {
-				var numbers = inToken.match(/\d+/);
-				outToken = {tokenType: "multiplier"};
-				outToken.multiplicity = {
-					min: numbers[0],
-					max: numbers.length > 1 ? numbers[1] : numbers[0]
-				};
 				outToken = this.parseEscapedCharacter(inToken);
+			} else if (inToken[0] === "?" || inToken[0] === "*" || inToken[0] === "+" || inToken[0] === "{") {
+				outToken = this.parseQuantifier(inToken);
 			} else if (inToken === "^") {
 				outToken.tokenType = "start";
 			} else if (inToken === "$") {
@@ -107,6 +95,47 @@
 					outToken.operands.push(inToken[i]);
 				}
 			}
+			return outToken;
+		};
+
+		this.parseQuantifier = function (inToken) {
+			var outToken = {tokenType: "quantifier"};
+
+			switch (inToken[0]) {
+				case '?':
+					outToḱen.min = 0;
+					outToken.max = 1;
+					break;
+				case '*':
+					outToken.min = 0;
+					outToken.max = this.INFINITY;
+					break;
+				case '+':
+					outToken.min = 1;
+					outToken.max = this.INFINITY;
+					break;
+				case '{':
+					if (!this.BRACE_QUANTIFIER_REGEX.test()) throw "That's a stupid quantifier and you're stupid, stupid.";
+					
+					// TODO Add some fuck*ng error handling here. :\
+					var subTokens = inToken.match(/,|[0-9]+/g);
+					outToken.min = subTokens[0];
+					outToken.max = (subTokens.length === 2 ? this.INFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					break;
+				default:
+					throw "Invalid quantifier, somehow: " + inToken;
+			}
+
+			if (inToken.length > 1) {
+				switch (inToken[inToken.length - 1]) {
+					case '?':
+						outToken.lazy = true;
+						break;
+					case '+':
+						outToken.greedy = true;
+				}
+			}
+
 			return outToken;
 		};
 		
