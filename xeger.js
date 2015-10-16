@@ -6,6 +6,8 @@
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.INFINITY = 100;
+
+		this.WHITESPACE_CLASS = [' ', '\t'];
 		
 		this.parse = function (regex) {
 			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
@@ -143,20 +145,19 @@
 			var outToken = {};
 			switch (inToken[1]) {
 				case "s":
-					outToken.tokenType = "literal";
-					outToken.content = " "; // Close enough for now.
+					outToken = {tokenType: "or", operands: this.WHITESPACE_CLASS};
+					break;
+				case 'S':
+					outToken = {tokenType: "nor", operands: this.WHITESPACE_CLASS};
 					break;
 				case "t":
-					outToken.tokenType = "literal";
-					outToken.content = "\t";
+					outToken = {tokenType: "literal", content: '\t'};
 					break;
 				case "n":
-					outToken.tokenType = "literal";
-					outToken.content = "\n";
+					outToken = {tokenType: "literal", content: '\n'};
 					break;
 				default:
-					outToken.tokenType = "literal";
-					outToken.content = inToken[1];
+					outToken = {tokenType: "literal", content: inToken[1]};
 			}
 			return outToken;
 		};
