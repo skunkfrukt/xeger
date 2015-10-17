@@ -108,7 +108,7 @@
 
 			switch (inToken[0]) {
 				case '?':
-					outToḱen.min = 0;
+					outToken.min = 0;
 					outToken.max = 1;
 					break;
 				case '*':
