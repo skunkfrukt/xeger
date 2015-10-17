@@ -181,7 +181,7 @@
 			}
 		};
 		
-		this.parseOutput = function () {
+		this.outputStructure = function () {
 			var regexString = document.getElementById("regex").value;
 			var regexStructure = this.parse(regexString);
 			window.debugStructure = regexStructure;
@@ -192,21 +192,19 @@
 			var outString = "";
 			if (typeof structure === "object") {
 				if (structure[0]) {
-					outString += "[";
+					outString += "<ol>";
 					for (var i = 0; i < structure.length; i++) {
-						outString += this.prettyPrint(structure[i], level + 1) + ", ";
+						outString += "<li>" + this.prettyPrint(structure[i], level + 1) + "</li>";
 					}
-					outString += "]";
+					outString += "</ol>";
 				} else {
-					if (structure.tokenType === "literal" && !structure.multiplicity) {
-						outString += structure.content;
+					if (structure.tokenType === "literal") {
+						outString += structure.content + (structure.multiplicity ? " {" + structure.multiplicity.min + "," + structure.multiplicity.max + "}" : "");
 					} else {
-						outString += "{";
-						for (var k in structure) {
-							outString += k + ": ";
-							outString += this.prettyPrint(structure[k], level + 1) + ", ";
-						}
-						outString += "}";
+						outString += "<dl>";
+						outString += "<dt>" + structure.tokenType + (structure.multiplicity ? " {" + structure.multiplicity.min + "," + structure.multiplicity.max + "}" : "") + "</dt>";
+						outString += "<dd>" + this.prettyPrint(structure.operands, level + 1) + "</dd>";
+						outString += "</dl>";
 					}
 				}
 			} else {
