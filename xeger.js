@@ -1,5 +1,22 @@
 (function () {
-	
+
+	var Range = function (min, max) {
+		if (min > max) throw "Invalid range; min " + min + " > max " + max;
+
+		this.min = min;
+		this.max = max;
+	};
+
+	Range.prototype.size = function () {
+		return this.max - this.min;
+	};
+
+	Range.prototype.contains = function (n) {
+		return (n >= this.min && n <= this.max);
+	};
+
+	window.Range = Range;
+
 	var ReverseRegexThing = function () {
 		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
