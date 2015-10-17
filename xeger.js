@@ -79,23 +79,23 @@
 			var outToken = {tokenType: "or", operands: []};
 			var startIndex = 1;
 			if (inToken[startIndex] === "^") {
-				startIndex ++;
+				startIndex++;
 				outToken.tokenType = "nor";
 			}
 			if (inToken[startIndex] === "-") {
-				startIndex ++;
+				startIndex++;
 				outToken.operands.push("-");
 			}
 			for (var i = startIndex; i < inToken.length - 1; i++) {
 				if (inToken[i] === "\\") {
-					i ++;
+					i++;
 					outToken.operands.push(inToken[i]);
 				} else if (inToken[i] === "-" && i < inToken.length - 2) {
 					var first = outToken.operands.pop();
 					var last = inToken[i + 1];
 					var range = {tokenType: "range", from: first, to: last};
 					outToken.operands.push(range);
-					i ++;
+					i++;
 				} else {
 					outToken.operands.push(inToken[i]);
 				}
@@ -138,6 +138,7 @@
 						break;
 					case '+':
 						outToken.greedy = true;
+						break;
 				}
 			}
 
@@ -196,7 +197,7 @@
 					}
 				}
 			} else {
-				outString += "\"" + structure + "\"";
+				outString += "\"" + structure + "\"?!!";
 			}
 			return outString;
 		};
@@ -227,6 +228,7 @@
 					}
 				}	
 			}
+			
 			return example;
 		};
 		
