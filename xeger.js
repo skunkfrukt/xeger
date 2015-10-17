@@ -1,7 +1,7 @@
 (function () {
 	
 	var ReverseRegexThing = function () {
-		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$]+/g;
+		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
@@ -11,44 +11,57 @@
 		
 		this.parse = function (regex) {
 			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
-			var structure = this.parseStructure(tokens, 0, 0);
+			var structure = this.parseStructure(tokens, 0, 0).structure;
 			
 			return structure;
 		};
 		
 		this.parseStructure = function(tokenArray, startIndex, parenthesisLevel) {
-			var structure = [];
+			var structure = {tokenType: "or", operands: [{tokenType: "and", operands: []}]};
+			var substructure = structure.operands[0];
 			
 			for (var i = startIndex; i < tokenArray.length; i++) {
 				var token = tokenArray[i];
 				if (token[0] === "(") {
 					var innerStructure = this.parseStructure(tokenArray, i + 1, parenthesisLevel + 1);
-					structure.push(innerStructure.structure);
+					substructure.operands.push(innerStructure.structure);
 					i = innerStructure.lastIndex;
 				} else if (token === ")" && parenthesisLevel > 0) {
+					while (structure.operands && structure.operands.length === 1) {
+						structure = structure.operands[0];
+					}
 					return {structure: structure, lastIndex: i};
 				} else {
 					var parsedToken = this.parseToken(token);
-					if (parsedToken.tokenType === "multiplier") {
-						var modifiedToken = structure[structure.length - 1];
+					if (parsedToken.tokenType === "pipe") {
+						substructure = {tokenType: "and", operands: []};
+						structure.operands.push(substructure);
+					} else if (parsedToken.tokenType === "quantifier") {
+						var modifiedToken = substructure.operands[substructure.operands.length - 1];
 						if (modifiedToken.tokenType === "literal" && modifiedToken.content.length > 1) {
 							var newToken = {
 								tokenType: "literal",
 								content: modifiedToken.content[modifiedToken.content.length - 1],
-								multiplicity: parsedToken.multiplicity
+								multiplicity: parsedToken
 							};
 							modifiedToken.content = modifiedToken.content.substring(0, modifiedToken.content.length - 1);
-							structure.push(newToken);
+							substructure.operands.push(newToken);
 						} else {
-							modifiedToken.multiplicity = parsedToken.multiplicity;
+							modifiedToken.multiplicity = parsedToken;
 						}
 					} else {
-						structure.push(parsedToken);
+						substructure.operands.push(parsedToken);
 					}
 				}
 			}
 			
-			return parenthesisLevel ? null : structure;
+			if (parenthesisLevel > 0) throw "Unclosed parenthesis in expression!!!11";
+
+			while (structure.operands && structure.operands.length === 1) {
+				structure = structure.operands[0];
+			}
+
+			return {structure: structure, lastIndex: null};
 		};
 		
 		this.parseToken = function (inToken) {
