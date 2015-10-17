@@ -5,7 +5,7 @@
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
-		this.INFINITY = 100;
+		this.PSEUDOINFINITY = 100;
 
 		this.WHITESPACE_CLASS = [' ', '\t'];
 		
@@ -110,11 +110,11 @@
 					break;
 				case '*':
 					outToken.min = 0;
-					outToken.max = this.INFINITY;
+					outToken.max = this.PSEUDOINFINITY;
 					break;
 				case '+':
 					outToken.min = 1;
-					outToken.max = this.INFINITY;
+					outToken.max = this.PSEUDOINFINITY;
 					break;
 				case '{':
 					if (!this.BRACE_QUANTIFIER_REGEX.test()) throw "That's a stupid quantifier and you're stupid, stupid.";
@@ -122,7 +122,7 @@
 					// TODO Add some fuck*ng error handling here. :\
 					var subTokens = inToken.match(/,|[0-9]+/g);
 					outToken.min = subTokens[0];
-					outToken.max = (subTokens.length === 2 ? this.INFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					outToken.max = (subTokens.length === 2 ? this.PSEUDOINFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
 					break;
 				default:
 					throw "Invalid quantifier, somehow: " + inToken;
