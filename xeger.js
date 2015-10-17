@@ -52,24 +52,27 @@
 		};
 		
 		this.parseToken = function (inToken) {
-			var outToken = {};
-			if (inToken[0] === "[") {
-				outToken = this.parseBracketClass(inToken);
-			} else if (inToken[0] === "\\") {
-				outToken = this.parseEscapedCharacter(inToken);
-			} else if (inToken[0] === "?" || inToken[0] === "*" || inToken[0] === "+" || inToken[0] === "{") {
-				outToken = this.parseQuantifier(inToken);
-			} else if (inToken === "^") {
-				outToken.tokenType = "start";
-			} else if (inToken === "$") {
-				outToken.tokenType = "end";
-			} else if (inToken[0] === ".") {
-				outToken.tokenType = "wildcard";
-			} else {
-				outToken.tokenType = "literal";
-				outToken.content = inToken;
-			}
-			return outToken;
+			switch (inToken[0]) {
+				case '|':
+					return {tokenType: "pipe"};
+				case '[':
+					return this.parseBracketClass(inToken);
+				case '\\':
+					return this.parseEscapedCharacter(inToken);
+				case '?':
+				case '*':
+				case '+':
+				case '{':
+					return this.parseQuantifier(inToken);
+				case '^':
+					return {tokenType: "start"};
+				case '$':
+					return {tokenType: "end"};
+				case '.':
+					return {tokenType: "wildcard"};
+				default:
+					return {tokenType: "literal", content: inToken};
+			}	
 		};
 
 		this.parseBracketClass = function (inToken) {
@@ -117,7 +120,7 @@
 					outToken.max = this.PSEUDOINFINITY;
 					break;
 				case '{':
-					if (!this.BRACE_QUANTIFIER_REGEX.test()) throw "That's a stupid quantifier and you're stupid, stupid.";
+					if (!this.BRACE_QUANTIFIER_REGEX.test(inToken)) throw "That's a stupid quantifier and you're stupid, stupid.";
 					
 					// TODO Add some fuck*ng error handling here. :\
 					var subTokens = inToken.match(/,|[0-9]+/g);
@@ -142,24 +145,26 @@
 		};
 		
 		this.parseEscapedCharacter = function (inToken) {
-			var outToken = {};
 			switch (inToken[1]) {
-				case "s":
-					outToken = {tokenType: "or", operands: this.WHITESPACE_CLASS};
-					break;
+				case 'd':
+					return {tokenType: "or", operands: this.DIGIT_CLASS};
+				case 'D':
+					return {tokenType: "nor", operands: this.DIGIT_CLASS};
+				case 'n':
+					return {tokenType: "literal", content: '\n'};
+				case 's':
+					return {tokenType: "or", operands: this.WHITESPACE_CLASS};
 				case 'S':
-					outToken = {tokenType: "nor", operands: this.WHITESPACE_CLASS};
-					break;
-				case "t":
-					outToken = {tokenType: "literal", content: '\t'};
-					break;
-				case "n":
-					outToken = {tokenType: "literal", content: '\n'};
-					break;
+					return {tokenType: "nor", operands: this.WHITESPACE_CLASS};
+				case 't':
+					return {tokenType: "literal", content: '\t'};
+				case 'w':
+					return {tokenType: "or", operands: this.WORD_CLASS};
+				case 'W':
+					return {tokenType: "nor", operands: this.WORD_CLASS};
 				default:
-					outToken = {tokenType: "literal", content: inToken[1]};
+					return {tokenType: "literal", content: inToken[1]};
 			}
-			return outToken;
 		};
 		
 		this.parseOutput = function () {
