@@ -95,11 +95,11 @@
 				case '{':
 					return this.parseQuantifier(inToken);
 				case '^':
-					return {tokenType: "start"};
+					return {tokenType: "anchor", position: "start"};
 				case '$':
-					return {tokenType: "end"};
+					return {tokenType: "anchor", position: "end"};
 				case '.':
-					return {tokenType: "wildcard"};
+					return {tokenType: "or", operands: ["ANYTHING!"]};
 				default:
 					return {tokenType: "literal", content: inToken};
 			}	
@@ -177,22 +177,36 @@
 		
 		this.parseEscapedCharacter = function (inToken) {
 			switch (inToken[1]) {
+				case '0':
+					return {tokenType: "literal", content: '\0'};
+				case 'b':
+					return {tokenType: "anchor", position: "word-boundary"};
+				case 'B':
+					return {tokenType: "anchor", position: "non-word-boundary"};
 				case 'd':
 					return {tokenType: "or", operands: this.DIGIT_CLASS};
 				case 'D':
 					return {tokenType: "nor", operands: this.DIGIT_CLASS};
+				case 'f':
+					return {tokenType: "literal", content: '\f'};
 				case 'n':
 					return {tokenType: "literal", content: '\n'};
+				case 'r':
+					return {tokenType: "literal", content: '{CARRIAGE RETURN}'};
 				case 's':
 					return {tokenType: "or", operands: this.WHITESPACE_CLASS};
 				case 'S':
 					return {tokenType: "nor", operands: this.WHITESPACE_CLASS};
 				case 't':
 					return {tokenType: "literal", content: '\t'};
+				case 'v':
+					return {tokenType: "literal", content: '{VERTICAL TAB}'};
 				case 'w':
 					return {tokenType: "or", operands: this.WORD_CLASS};
 				case 'W':
 					return {tokenType: "nor", operands: this.WORD_CLASS};
+				case 'Z':
+					return {tokenType: "anchor", position: "end"};
 				default:
 					return {tokenType: "literal", content: inToken[1]};
 			}
