@@ -148,8 +148,8 @@
 					
 					// TODO Add some fuck*ng error handling here. :\
 					var subTokens = inToken.match(/,|[0-9]+/g);
-					outToken.min = subTokens[0];
-					outToken.max = (subTokens.length === 2 ? this.PSEUDOINFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					outToken.min = parseInt(subTokens[0]);
+					outToken.max = parseInt(subTokens.length === 2 ? this.PSEUDOINFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
 					break;
 				default:
 					throw "Invalid quantifier, somehow: " + inToken;
@@ -186,7 +186,7 @@
 				case 'n':
 					return {tokenType: "literal", content: '\n'};
 				case 'r':
-					return {tokenType: "literal", content: '{CARRIAGE RETURN}'};
+					return {tokenType: "literal", content: '\r'};
 				case 's':
 					return {tokenType: "or", operands: this.WHITESPACE_CLASS};
 				case 'S':
@@ -194,7 +194,7 @@
 				case 't':
 					return {tokenType: "literal", content: '\t'};
 				case 'v':
-					return {tokenType: "literal", content: '{VERTICAL TAB}'};
+					return {tokenType: "literal", content: '\v'};
 				case 'w':
 					return {tokenType: "or", operands: this.WORD_CLASS};
 				case 'W':
@@ -220,20 +220,26 @@
 			return outStructure;
 		}
 		
-		this.outputStructure = function () {
-			var regexString = document.getElementById("regex").value;
-			var regexStructure = this.parse(regexString);
+		this.parseFromTo = function (inputElementId, structureOutputElementId, exampleOutputElementId) {
+			var inputElement = document.getElementById(inputElementId);
+			var regexStructure = this.parse(inputElement.value);
+
 			window.debugStructure = regexStructure;
-			document.getElementById("structureOutput").innerHTML = this.prettyPrint(regexStructure, 0);
+
+			var structureOutputElement = document.getElementById(structureOutputElementId);
+			structureOutputElement.innerHTML = this.prettyPrint(regexStructure, 0);
+
+			var exampleOutputElement = document.getElementById(exampleOutputElementId);
+			exampleOutputElement.innerHTML = this.generateExample(regexStructure);
 		};
 		
-		this.prettyPrint = function (structure, level) {
+		this.prettyPrint = function (structure) {
 			var outString = "";
 			if (typeof structure === "object") {
 				if (structure[0]) {
 					outString += "<ol>";
 					for (var i = 0; i < structure.length; i++) {
-						outString += "<li>" + this.prettyPrint(structure[i], level + 1) + "</li>";
+						outString += "<li>" + this.prettyPrint(structure[i]) + "</li>";
 					}
 					outString += "</ol>";
 				} else {
@@ -242,7 +248,7 @@
 					} else {
 						outString += "<dl>";
 						outString += "<dt>" + structure.tokenType + (structure.multiplicity ? " {" + structure.multiplicity.min + "," + structure.multiplicity.max + "}" : "") + "</dt>";
-						outString += "<dd>" + this.prettyPrint(structure.operands, level + 1) + "</dd>";
+						outString += "<dd>" + this.prettyPrint(structure.operands) + "</dd>";
 						outString += "</dl>";
 					}
 				}
@@ -252,31 +258,37 @@
 			return outString;
 		};
 		
+		this.randomizeQuantifier = function (quantifierToken) {
+			var span = quantifierToken.max - quantifierToken.min;
+			
+			return parseInt(quantifierToken.min) + Math.floor(Math.random() * (span + 1));
+		};
+
 		this.generateExample = function (structure) {
 			var example = "";
-			for (var i = 0; i < structure.length; i++) {
-				var token = structure[i];
-				if (token[0]) {
-					example += this.generateExample(token);
+			var quantifier = 1;
+
+			if (structure.multiplicity) {
+				quantifier = this.randomizeQuantifier(structure.multiplicity);
+			}
+
+			for (var m = 0; m < quantifier; m++) {
+				switch (structure.tokenType) {
+					case "and":
+						for (var i = 0; i < structure.operands.length; i++) {
+							example += this.generateExample(structure.operands[i]);
+						}
+						break;
+					case "or":
+						var operandIndex = Math.floor(Math.random() * structure.operands.length);
+						example += this.generateExample(structure.operands[operandIndex]);
+						break;
+					case "literal":
+						example += structure.content;
+						break;
+					default:
+						example += structure;
 				}
-				var multiplicity = 1;
-				if (token.multiplicity) {
-					var min = token.multiplicity.min;
-					var max = token.multiplicity.max;
-					multiplicity = min + Math.floor(Math.random() * (max - min + 1));
-				}
-				for (var j = 0; j < multiplicity; j++) {
-					switch (token.tokenType) {
-						case "literal":
-							example += token.content;
-							break;
-						case "wildcard":
-							example += String.fromCharCode(Math.floor(Math.random() * 256));
-							break;
-						default:
-							// not yet implemented
-					}
-				}	
 			}
 			
 			return example;
