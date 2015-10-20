@@ -44,9 +44,6 @@
 					substructure.operands.push(innerStructure.structure);
 					i = innerStructure.lastIndex;
 				} else if (token === ")" && parenthesisLevel > 0) {
-					while (structure.operands && structure.operands.length === 1) {
-						structure = structure.operands[0];
-					}
 					return {structure: structure, lastIndex: i};
 				} else {
 					var parsedToken = this.parseToken(token);
@@ -74,10 +71,7 @@
 			
 			if (parenthesisLevel > 0) throw "Unclosed parenthesis in expression!!!11";
 
-			while (structure.operands && structure.operands.length === 1) {
-				structure = structure.operands[0];
-			}
-
+			structure = this.flatten(structure);
 			return {structure: structure, lastIndex: null};
 		};
 		
@@ -211,6 +205,20 @@
 					return {tokenType: "literal", content: inToken[1]};
 			}
 		};
+
+		this.flatten = function (structure) {
+			var outStructure = structure;
+			console.log("Flattening something...");
+			while (outStructure.operands && outStructure.operands.length === 1) {
+				outStructure = outStructure.operands[0];
+			}
+			if (outStructure.operands) {
+				for (var i = 0; i < outStructure.operands.length; i++) {
+					outStructure.operands[i] = this.flatten(outStructure.operands[i]);
+				}
+			}
+			return outStructure;
+		}
 		
 		this.outputStructure = function () {
 			var regexString = document.getElementById("regex").value;
