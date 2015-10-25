@@ -98,9 +98,9 @@
 	window.CharacterClass = CharacterClass;
 
 	var ReverseRegexThing = new function () {
-		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
+		this.REGEX_TOKEN_REGEX = /\\u\{[0-9A-Fa-f]{1,4}\}|\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\c[A-Z]|\\[0-3][0-7]{2}|\\[^cux]|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
-		this.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\.|[^\]\\]/g;
+		this.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\c[A-Z]|\\[0-3][0-7]{2}|\\.|[^\]\\]/g;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.PSEUDOINFINITY = 100;
@@ -192,15 +192,14 @@
 					if (rangeMin instanceof CharacterClass || rangeMin instanceof Range) {
 						throw "Trying to use a class or a range as a boundary value of another range.";
 					}
-					var rangeMax = this.parseBracketClassSubtoken(subTokens[i+1]);
+					var rangeMax = this.parseBracketClassSubtoken(subTokens[i + 1]);
 					if (rangeMax instanceof CharacterClass) {
 						throw "Trying to use a class as a boundary value of a range."
 					}
 					parsedSubtokens.push(new Range(rangeMin, rangeMax));
 					i++;
 				} else {
-					var pSt = this.parseBracketClassSubtoken(subtoken);
-										parsedSubtokens.push(pSt);
+					parsedSubtokens.push(this.parseBracketClassSubtoken(subtoken));
 				}
 			}
 
@@ -215,46 +214,45 @@
 			if (inToken.length === 1) {
 				return inToken;
 			} else if (inToken[0] === '\\') {
-				switch (inToken[1]) {
-					case 'u':
-						return String.fromCharCode(parseInt(inToken.substring(2, 6), 16));
-						break;
-					case 'x':
-						return String.fromCharCode(parseInt(inToken.substring(2, 4), 16));
-						break;
-					case 'c':
-						return '_';  // Can't be arsed.
-						break;
-					case 's':
-						return window.WHITESPACE_CLASS;
-						break;
-					case 'S':
-						return window.NON_WHITESPACE_CLASS;
-						break;
-					case 'w':
-						return window.WORD_CLASS;
-						break;
-					case 'W':
-						return window.NON_WORD_CLASS;
-						break;
-					case 'd':
-						return window.DIGIT_CLASS;
-						break;
-					case 'D':
-						return window.NON_DIGIT_CLASS
-						break;
-					case 'n':
-						return '\n';
-						break;
-					case 't':
-						return '\t';
-						break;
-					default:
-						return inToken[1];
+				if (inToken[1] === 'b') {
+					return '\u0008';  // Backspace
 				}
+
+				var parsedSubtoken = this.parseEscapedCharacter(inToken);
+
+				if (parsedSubtoken.tokenType === "literal") {
+					return parsedSubtoken.content;
+				} else if (parsedSubtoken.tokenType === "characterClass") {
+					return parsedSubtoken.characterClass;
+				} else {
+					throw "Invalid token in character class: " + inToken + ", tokenType: " + parsedSubtoken.tokenType;
+				}
+				
 			} else {
 				throw "wtf";
 			}
+		};
+
+		this.parseOctalCharacterEscape = function (inToken) {
+			return String.fromCharCode(parseInt(inToken.subString(2, 5), 8));
+		};
+
+		this.parseHexCharacterEscape = function (inToken) {
+			return String.fromCharCode(parseInt(inToken.substring(2, 4), 16));
+		};
+
+		this.parseUnicodeCharacterEscape = function (inToken) {
+			if (inToken[2] === '{') {
+				var hexCharCode = inToken.match(/\{([0-9A-Fa-f]{1,4})\}/)[1];
+			} else {
+				var hexCharCode = inToken.substring(2, 6);
+			}
+			return String.fromCharCode(parseInt(hexCharCode, 16));
+		};
+
+		this.parseControlCharacterEscape = function (inToken) {
+			var charCode = inToken.charCodeAt(2) - 64;
+			return String.fromCharCode(charCode);
 		};
 
 		this.parseQuantifier = function (inToken) {
@@ -302,11 +300,19 @@
 		this.parseEscapedCharacter = function (inToken) {
 			switch (inToken[1]) {
 				case '0':
-					return {tokenType: "literal", content: '\0'};
+					if (inToken.length === 2) {
+						return {tokenType: "literal", content: '\0'};
+					}
+				case '1':
+				case '2':
+				case '3':
+					return {tokenType: "literal", content: this.parseOctalCharacterEscape(inToken)};
 				case 'b':
 					return {tokenType: "anchor", position: "word-boundary"};
 				case 'B':
 					return {tokenType: "anchor", position: "non-word-boundary"};
+				case 'c':
+					return {tokenType: "literal", content: this.parseControlCharacterEscape(inToken)};
 				case 'd':
 					return {tokenType: "characterClass", characterClass: window.DIGIT_CLASS};
 				case 'D':
@@ -323,12 +329,16 @@
 					return {tokenType: "characterClass", characterClass: window.NON_WHITESPACE_CLASS};
 				case 't':
 					return {tokenType: "literal", content: '\t'};
+				case 'u':
+					return {tokenType: "literal", content: this.parseUnicodeCharacterEscape(inToken)};
 				case 'v':
 					return {tokenType: "literal", content: '\v'};
 				case 'w':
 					return {tokenType: "characterClass", characterClass: window.WORD_CLASS};
 				case 'W':
 					return {tokenType: "characterClass", characterClass: window.NON_WORD_CLASS};
+				case 'x':
+					return {tokenType: "literal", content: this.parseHexCharacterEscape(inToken)};
 				case 'Z':
 					return {tokenType: "anchor", position: "end"};
 				default:
