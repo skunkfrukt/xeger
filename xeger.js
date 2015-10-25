@@ -108,8 +108,12 @@
 		this.parse = function (regex) {
 			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
 			var structure = this.parseStructure(tokens, 0, 0).structure;
-			
-			return this.generateExample(structure);
+			var example = this.generateExample(structure);
+			var actualRegex = new RegExp(regex);
+			if (!actualRegex.test(example)) {
+				throw "Example " + example + " does not match regex " + actualRegex;
+			}
+			return example;
 		};
 		
 		this.parseStructure = function(tokenArray, startIndex, parenthesisLevel) {
@@ -227,7 +231,7 @@
 				} else {
 					throw "Invalid token in character class: " + inToken + ", tokenType: " + parsedSubtoken.tokenType;
 				}
-				
+
 			} else {
 				throw "wtf";
 			}
