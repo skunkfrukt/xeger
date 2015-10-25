@@ -336,7 +336,7 @@
 
 		this.flatten = function (structure) {
 			var outStructure = structure;
-			while (outStructure.operands && outStructure.operands.length === 1) {
+			while (outStructure.operands && outStructure.operands.length === 1 && !outStructure.multiplicity) {
 				outStructure = outStructure.operands[0];
 			}
 			if (outStructure.operands) {
