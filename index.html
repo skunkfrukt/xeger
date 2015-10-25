@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Reverse Regex Thing | /\\.|\((?:\?.)?|\)|\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+]|\{\d+(?:,\d+)?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$]+/</title>
+		<title>Reverse Regex Thing</title>
 	</head>
 	<script src="xeger.js"></script>
-	<body onload="window.rrt = new ReverseRegexThing();">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script src="ui.js"></script>
+	<body>
 		<div>
 			<input id="regex" />
-			<button onclick="rrt.parseFromTo('regex', 'exampleOutput');">Do stuff</button>
+			<button id="parseButton" >Parse</button>
 		</div>
 		<pre>
 			<div id="exampleOutput"></div>

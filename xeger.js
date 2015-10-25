@@ -97,10 +97,10 @@
 
 	window.CharacterClass = CharacterClass;
 
-	var ReverseRegexThing = function () {
+	var ReverseRegexThing = new function () {
 		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
-		CharacterClass.prototype.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\.|[^\]\\]/g;
+		this.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\.|[^\]\\]/g;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.PSEUDOINFINITY = 100;
@@ -109,7 +109,7 @@
 			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
 			var structure = this.parseStructure(tokens, 0, 0).structure;
 			
-			return structure;
+			return this.generateExample(structure);
 		};
 		
 		this.parseStructure = function(tokenArray, startIndex, parenthesisLevel) {
@@ -179,7 +179,7 @@
 		};
 
 		this.parseBracketClass = function (inToken) {
-			var subTokens = inToken.substring(1, inToken.length - 1).match(CharacterClass.prototype.BRACKET_SUBTOKEN_REGEX);
+			var subTokens = inToken.substring(1, inToken.length - 1).match(this.BRACKET_SUBTOKEN_REGEX);
 			var outToken = {tokenType: "characterClass", characterClass: new CharacterClass(true)};
 
 			var parsedSubtokens = []
@@ -348,16 +348,6 @@
 			}
 			return outStructure;	
 		}
-		
-		this.parseFromTo = function (inputElementId, outputElementId) {
-			var inputElement = document.getElementById(inputElementId);
-			var regexStructure = this.parse(inputElement.value);
-
-			window.debugStructure = regexStructure;
-
-			var exampleOutputElement = document.getElementById(outputElementId);
-			exampleOutputElement.innerHTML = this.generateExample(regexStructure);
-		};
 		
 		this.randomizeQuantifier = function (quantifierToken) {
 			var span = quantifierToken.max - quantifierToken.min;
