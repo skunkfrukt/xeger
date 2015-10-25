@@ -238,7 +238,7 @@
 		};
 
 		this.parseOctalCharacterEscape = function (inToken) {
-			return String.fromCharCode(parseInt(inToken.subString(2, 5), 8));
+			return String.fromCharCode(parseInt(inToken.substring(2, 5), 8));
 		};
 
 		this.parseHexCharacterEscape = function (inToken) {
