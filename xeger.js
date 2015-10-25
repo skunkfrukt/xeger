@@ -135,12 +135,12 @@
 							var newToken = {
 								tokenType: "literal",
 								content: modifiedToken.content[modifiedToken.content.length - 1],
-								multiplicity: parsedToken
+								quantifier: parsedToken
 							};
 							modifiedToken.content = modifiedToken.content.substring(0, modifiedToken.content.length - 1);
 							substructure.operands.push(newToken);
 						} else {
-							modifiedToken.multiplicity = parsedToken;
+							modifiedToken.quantifier = parsedToken;
 						}
 					} else {
 						substructure.operands.push(parsedToken);
@@ -338,7 +338,7 @@
 
 		this.flatten = function (structure) {
 			var outStructure = structure;
-			while (outStructure.operands && outStructure.operands.length === 1 && !outStructure.multiplicity) {
+			while (outStructure.operands && outStructure.operands.length === 1 && !outStructure.quantifier) {
 				outStructure = outStructure.operands[0];
 			}
 			if (outStructure.operands) {
@@ -359,8 +359,8 @@
 			var example = "";
 			var quantifier = 1;
 
-			if (structure.multiplicity) {
-				quantifier = this.randomizeQuantifier(structure.multiplicity);
+			if (structure.quantifier) {
+				quantifier = this.randomizeQuantifier(structure.quantifier);
 			}
 
 			for (var m = 0; m < quantifier; m++) {
