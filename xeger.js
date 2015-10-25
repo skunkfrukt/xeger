@@ -349,42 +349,14 @@
 			return outStructure;	
 		}
 		
-		this.parseFromTo = function (inputElementId, structureOutputElementId, exampleOutputElementId) {
+		this.parseFromTo = function (inputElementId, outputElementId) {
 			var inputElement = document.getElementById(inputElementId);
 			var regexStructure = this.parse(inputElement.value);
 
 			window.debugStructure = regexStructure;
 
-			var structureOutputElement = document.getElementById(structureOutputElementId);
-			structureOutputElement.innerHTML = this.prettyPrint(regexStructure, 0);
-
-			var exampleOutputElement = document.getElementById(exampleOutputElementId);
+			var exampleOutputElement = document.getElementById(outputElementId);
 			exampleOutputElement.innerHTML = this.generateExample(regexStructure);
-		};
-		
-		this.prettyPrint = function (structure) {
-			var outString = "";
-			if (typeof structure === "object") {
-				if (structure[0]) {
-					outString += "<ol>";
-					for (var i = 0; i < structure.length; i++) {
-						outString += "<li>" + this.prettyPrint(structure[i]) + "</li>";
-					}
-					outString += "</ol>";
-				} else {
-					if (structure.tokenType === "literal") {
-						outString += structure.content + (structure.multiplicity ? " {" + structure.multiplicity.min + "," + structure.multiplicity.max + "}" : "");
-					} else {
-						outString += "<dl>";
-						outString += "<dt>" + structure.tokenType + (structure.multiplicity ? " {" + structure.multiplicity.min + "," + structure.multiplicity.max + "}" : "") + "</dt>";
-						outString += "<dd>" + this.prettyPrint(structure.operands) + "</dd>";
-						outString += "</dl>";
-					}
-				}
-			} else {
-				outString += "\"" + structure + "\"?!!";
-			}
-			return outString;
 		};
 		
 		this.randomizeQuantifier = function (quantifierToken) {
