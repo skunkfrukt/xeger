@@ -1,21 +1,91 @@
 (function () {
 
 	var Range = function (min, max) {
-		if (min > max) throw "Invalid range; min " + min + " > max " + max;
-
-		this.min = min;
-		this.max = max;
+		if (this.min > this.max) {
+			throw "Invalid range: " + min + ", " + max;
+		}
+		this.min = (typeof min === "number" ? min : min.charCodeAt());
+		this.max = (typeof max === "number" ? max : max.charCodeAt());
 	};
 
-	Range.prototype.size = function () {
-		return this.max - this.min;
-	};
+	Range.prototype.expand = function() {
+		var values = [];
 
-	Range.prototype.contains = function (n) {
-		return (n >= this.min && n <= this.max);
+		for (var i = this.min; i <= this.max; i++) {
+			values.push(i);
+		}
+
+		return values;
 	};
 
 	window.Range = Range;
+
+	var CharacterClass = function (isPositive /*...*/) {
+		this.isPositive = isPositive;
+		this.items = {};
+		this.size = 0;
+
+		for (var i = 1; i < arguments.length; i++) {
+			this.add(arguments[i]);
+		}
+	};
+
+	CharacterClass.prototype.add = function (item) {
+		if (typeof item === "string") {
+			this.items[item.charCodeAt(0)] = true;
+		} else if (typeof item === "number") {
+			this.items[item] = true;
+		} else if (item instanceof Range) {
+			var chars = item.expand();
+			for (var i = 0; i < chars.length; i++) {
+				this.items[chars[i]] = true;
+			}
+		} else if (item instanceof CharacterClass) {
+			var chars = item.getAllCharCodes();
+			for (var i = 0; i < chars.length; i++) {
+				this.items[chars[i]] = true;
+			}
+		}
+
+		this.size = (this.isPositive ? Object.keys(this.items).length : 65536 - Object.keys(this.items).length);
+	};
+
+	CharacterClass.prototype.getAllCharCodes = function () {
+		if (this.isPositive) {
+			return Object.keys(this.items);
+		} else {
+			var charCodes = [];
+			for (var i = 0; i < 65536; i++) {
+				if (!this.items[i]) {
+					charCodes.push(i);
+				}
+			}
+		}
+	};
+
+	CharacterClass.prototype.inverse = function () {
+		return new CharacterClass(!this.isPositive, this);
+	};
+
+	CharacterClass.prototype.getRandomCharacter = function () {
+		var randomIndex = Math.floor(Math.random() * this.size);
+		if (this.isPositive) {
+			var randomCharCode = Object.keys(this.items).sort()[randomIndex];
+			return String.fromCharCode(randomCharCode);
+		} else {
+			var excludedCharCodes = Object.keys(this.items).sort();
+			for (var i = 0; i < excludedCharCodes.length; i++) {
+				if (excludedCharCodes[i] <= randomIndex) {
+					randomIndex++;
+				} else {
+					return String.fromCharCode(randomIndex);
+				}
+			}
+		}
+	};
+
+
+	window.CharacterClass = CharacterClass;
 
 	var ReverseRegexThing = function () {
 		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
