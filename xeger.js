@@ -84,6 +84,14 @@
 		}
 	};
 
+	window.WILDCARD_CLASS = new CharacterClass(false);  // Negative class excluding nothing. Not confusing at all.
+	window.DIGIT_CLASS = new CharacterClass(true, new Range('0', '9'));
+	window.NON_DIGIT_CLASS = window.DIGIT_CLASS.inverse();
+	window.WORD_CLASS = new CharacterClass(true, new Range('A', 'Z'), new Range('a', 'z'), new Range('0', '9'), '_');
+	window.NON_WORD_CLASS = window.WORD_CLASS.inverse();
+	window.WHITESPACE_CLASS = new CharacterClass(true, '\f', '\n', '\r', '\t', '\v', '\u00a0', '\u1680', '\u180e',
+		new Range('\u2000', '\u200a'), '\u2028', '\u2029', '\u202f', '\u205f', '\u3000', '\ufeff');
+	window.NON_WHITESPACE_CLASS = window.WHITESPACE_CLASS.inverse();
 
 	window.CharacterClass = CharacterClass;
 
