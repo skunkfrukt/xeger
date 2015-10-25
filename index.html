@@ -7,9 +7,10 @@
 	<body onload="window.rrt = new ReverseRegexThing();">
 		<div>
 			<input id="regex" />
-			<button onclick="rrt.parseFromTo('regex', 'structureOutput', 'exampleOutput');">Do stuff</button>
+			<button onclick="rrt.parseFromTo('regex', 'exampleOutput');">Do stuff</button>
 		</div>
-		<div id="structureOutput"></div>
-		<div id="exampleOutput"></div>
+		<pre>
+			<div id="exampleOutput"></div>
+		</pre>
 	</body>
 </html>
