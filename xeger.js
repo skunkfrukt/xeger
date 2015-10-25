@@ -60,6 +60,7 @@
 					charCodes.push(i);
 				}
 			}
+			return charCodes;
 		}
 	};
 
@@ -73,14 +74,15 @@
 			var randomCharCode = Object.keys(this.items).sort()[randomIndex];
 			return String.fromCharCode(randomCharCode);
 		} else {
-			var excludedCharCodes = Object.keys(this.items).sort();
+			var excludedCharCodes = Object.keys(this.items).sort(function (a, b) { return a - b });
 			for (var i = 0; i < excludedCharCodes.length; i++) {
 				if (excludedCharCodes[i] <= randomIndex) {
 					randomIndex++;
 				} else {
-					return String.fromCharCode(randomIndex);
+					break;
 				}
 			}
+			return String.fromCharCode(randomIndex);
 		}
 	};
 
@@ -184,7 +186,7 @@
 			for (var i = 0; i < subTokens.length; i++) {
 				var subtoken = subTokens[i];
 				if (subtoken === '^' && i === 0) {
-					outToken.group.isPositive = false;
+					outToken.characterClass.isPositive = false;
 				} else if (subtoken === '-' && parsedSubtokens.length > 0 && i < subTokens.length - 1) {
 					var rangeMin = parsedSubtokens.pop();
 					if (rangeMin instanceof CharacterClass || rangeMin instanceof Range) {
@@ -213,7 +215,7 @@
 			if (inToken.length === 1) {
 				return inToken;
 			} else if (inToken[0] === '\\') {
-				switch (inToken[0]) {
+				switch (inToken[1]) {
 					case 'u':
 						return String.fromCharCode(parseInt(inToken.substring(2, 6), 16));
 						break;
@@ -248,7 +250,7 @@
 						return '\t';
 						break;
 					default:
-						return inToken[2];
+						return inToken[1];
 				}
 			} else {
 				throw "wtf";
@@ -308,7 +310,7 @@
 				case 'd':
 					return {tokenType: "characterClass", characterClass: window.DIGIT_CLASS};
 				case 'D':
-					return {tokenType: "characterClass", characterClass: window.DIGIT_CLASS};
+					return {tokenType: "characterClass", characterClass: window.NON_DIGIT_CLASS};
 				case 'f':
 					return {tokenType: "literal", content: '\f'};
 				case 'n':
@@ -344,7 +346,7 @@
 					outStructure.operands[i] = this.flatten(outStructure.operands[i]);
 				}
 			}
-			return outStructure;
+			return outStructure;	
 		}
 		
 		this.parseFromTo = function (inputElementId, structureOutputElementId, exampleOutputElementId) {
