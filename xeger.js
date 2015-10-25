@@ -98,11 +98,10 @@
 	var ReverseRegexThing = function () {
 		this.REGEX_TOKEN_REGEX = /\\.|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+))?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
 		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
+		CharacterClass.prototype.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\.|[^\]\\]/g;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
 		this.PSEUDOINFINITY = 100;
-
-		this.WHITESPACE_CLASS = [' ', '\t'];
 		
 		this.parse = function (regex) {
 			var tokens = regex.match(this.REGEX_TOKEN_REGEX);
@@ -171,38 +170,89 @@
 				case '$':
 					return {tokenType: "anchor", position: "end"};
 				case '.':
-					return {tokenType: "or", operands: ["ANYTHING!"]};
+					return {tokenType: "characterClass", characterClass: window.WILDCARD_CLASS};
 				default:
 					return {tokenType: "literal", content: inToken};
 			}	
 		};
 
 		this.parseBracketClass = function (inToken) {
-			var outToken = {tokenType: "or", operands: []};
-			var startIndex = 1;
-			if (inToken[startIndex] === "^") {
-				startIndex++;
-				outToken.tokenType = "nor";
-			}
-			if (inToken[startIndex] === "-") {
-				startIndex++;
-				outToken.operands.push("-");
-			}
-			for (var i = startIndex; i < inToken.length - 1; i++) {
-				if (inToken[i] === "\\") {
-					i++;
-					outToken.operands.push(inToken[i]);
-				} else if (inToken[i] === "-" && i < inToken.length - 2) {
-					var first = outToken.operands.pop();
-					var last = inToken[i + 1];
-					var range = {tokenType: "range", from: first, to: last};
-					outToken.operands.push(range);
+			var subTokens = inToken.substring(1, inToken.length - 1).match(CharacterClass.prototype.BRACKET_SUBTOKEN_REGEX);
+			var outToken = {tokenType: "characterClass", characterClass: new CharacterClass(true)};
+
+			var parsedSubtokens = []
+			for (var i = 0; i < subTokens.length; i++) {
+				var subtoken = subTokens[i];
+				if (subtoken === '^' && i === 0) {
+					outToken.group.isPositive = false;
+				} else if (subtoken === '-' && parsedSubtokens.length > 0 && i < subTokens.length - 1) {
+					var rangeMin = parsedSubtokens.pop();
+					if (rangeMin instanceof CharacterClass || rangeMin instanceof Range) {
+						throw "Trying to use a class or a range as a boundary value of another range.";
+					}
+					var rangeMax = this.parseBracketClassSubtoken(subTokens[i+1]);
+					if (rangeMax instanceof CharacterClass) {
+						throw "Trying to use a class as a boundary value of a range."
+					}
+					parsedSubtokens.push(new Range(rangeMin, rangeMax));
 					i++;
 				} else {
-					outToken.operands.push(inToken[i]);
+					var pSt = this.parseBracketClassSubtoken(subtoken);
+										parsedSubtokens.push(pSt);
 				}
 			}
+
+			for (var i = 0; i < parsedSubtokens.length; i++) {
+				outToken.characterClass.add(parsedSubtokens[i]);
+			}
+
 			return outToken;
+		};
+
+		this.parseBracketClassSubtoken = function (inToken) {
+			if (inToken.length === 1) {
+				return inToken;
+			} else if (inToken[0] === '\\') {
+				switch (inToken[0]) {
+					case 'u':
+						return String.fromCharCode(parseInt(inToken.substring(2, 6), 16));
+						break;
+					case 'x':
+						return String.fromCharCode(parseInt(inToken.substring(2, 4), 16));
+						break;
+					case 'c':
+						return '_';  // Can't be arsed.
+						break;
+					case 's':
+						return window.WHITESPACE_CLASS;
+						break;
+					case 'S':
+						return window.NON_WHITESPACE_CLASS;
+						break;
+					case 'w':
+						return window.WORD_CLASS;
+						break;
+					case 'W':
+						return window.NON_WORD_CLASS;
+						break;
+					case 'd':
+						return window.DIGIT_CLASS;
+						break;
+					case 'D':
+						return window.NON_DIGIT_CLASS
+						break;
+					case 'n':
+						return '\n';
+						break;
+					case 't':
+						return '\t';
+						break;
+					default:
+						return inToken[2];
+				}
+			} else {
+				throw "wtf";
+			}
 		};
 
 		this.parseQuantifier = function (inToken) {
@@ -256,9 +306,9 @@
 				case 'B':
 					return {tokenType: "anchor", position: "non-word-boundary"};
 				case 'd':
-					return {tokenType: "or", operands: this.DIGIT_CLASS};
+					return {tokenType: "characterClass", characterClass: window.DIGIT_CLASS};
 				case 'D':
-					return {tokenType: "nor", operands: this.DIGIT_CLASS};
+					return {tokenType: "characterClass", characterClass: window.DIGIT_CLASS};
 				case 'f':
 					return {tokenType: "literal", content: '\f'};
 				case 'n':
@@ -266,17 +316,17 @@
 				case 'r':
 					return {tokenType: "literal", content: '\r'};
 				case 's':
-					return {tokenType: "or", operands: this.WHITESPACE_CLASS};
+					return {tokenType: "characterClass", characterClass: window.WHITESPACE_CLASS};
 				case 'S':
-					return {tokenType: "nor", operands: this.WHITESPACE_CLASS};
+					return {tokenType: "characterClass", characterClass: window.NON_WHITESPACE_CLASS};
 				case 't':
 					return {tokenType: "literal", content: '\t'};
 				case 'v':
 					return {tokenType: "literal", content: '\v'};
 				case 'w':
-					return {tokenType: "or", operands: this.WORD_CLASS};
+					return {tokenType: "characterClass", characterClass: window.WORD_CLASS};
 				case 'W':
-					return {tokenType: "nor", operands: this.WORD_CLASS};
+					return {tokenType: "characterClass", characterClass: window.NON_WORD_CLASS};
 				case 'Z':
 					return {tokenType: "anchor", position: "end"};
 				default:
@@ -286,7 +336,6 @@
 
 		this.flatten = function (structure) {
 			var outStructure = structure;
-			console.log("Flattening something...");
 			while (outStructure.operands && outStructure.operands.length === 1) {
 				outStructure = outStructure.operands[0];
 			}
@@ -360,6 +409,9 @@
 					case "or":
 						var operandIndex = Math.floor(Math.random() * structure.operands.length);
 						example += this.generateExample(structure.operands[operandIndex]);
+						break;
+					case "characterClass":
+						example += structure.characterClass.getRandomCharacter();
 						break;
 					case "literal":
 						example += structure.content;
