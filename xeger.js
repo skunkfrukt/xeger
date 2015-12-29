@@ -23,7 +23,7 @@
 	var CharacterClass = function (isPositive /*...*/) {
 		this.isPositive = isPositive;
 		this.items = {};
-		this.size = 0;
+		this.size = (isPositive ? 0 : 65536);
 
 		for (var i = 1; i < arguments.length; i++) {
 			this.add(arguments[i]);
