@@ -281,7 +281,11 @@
 					// TODO Add some fuck*ng error handling here. :\
 					var subTokens = inToken.match(/,|[0-9]+/g);
 					outToken.min = parseInt(subTokens[0]);
-					outToken.max = parseInt(subTokens.length === 2 ? this.PSEUDOINFINITY : subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					if (subTokens.length === 2) {
+						outToken.max = outToken.min <= this.PSEUDOINFINITY ? this.PSEUDOINFINITY : outToken.min;
+					} else {
+						outToken.max = parseInt(subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					}
 					break;
 				default:
 					throw "Invalid quantifier, somehow: " + inToken;
