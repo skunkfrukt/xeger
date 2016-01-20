@@ -9,7 +9,7 @@ $(document).ready(function () {
 		var getParameters = {};
 		for (var i = 0; i < getItems.length; i++) {
 			var keyVal = getItems[i].split('=');
-			getParameters[keyval[0]] = keyVal[1];
+			getParameters[keyVal[0]] = keyVal[1];
 		}
 		
 		if (getParameters["pattern"]) {
