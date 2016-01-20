@@ -281,10 +281,16 @@
 					// TODO Add some fuck*ng error handling here. :\
 					var subTokens = inToken.match(/,|[0-9]+/g);
 					outToken.min = parseInt(subTokens[0]);
-					if (subTokens.length === 2) {
-						outToken.max = outToken.min <= this.PSEUDOINFINITY ? this.PSEUDOINFINITY : outToken.min;
-					} else {
-						outToken.max = parseInt(subTokens[subTokens.length - 1]); // Clear as day. ^_^
+					switch (subTokens.length) {
+						case 1:
+							outToken.max = parseInt(subTokens[0]);
+							break;
+						case 2:
+							outToken.max = this.PSEUDOINFINITY;
+							break;
+						case 3:
+							outToken.max = parseInt(subTokens[2]);
+							break;
 					}
 					break;
 				default:
