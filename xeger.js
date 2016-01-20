@@ -99,7 +99,7 @@
 
 	var ReverseRegexThing = new function () {
 		this.REGEX_TOKEN_REGEX = /\\u\{[0-9A-Fa-f]{1,4}\}|\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\c[A-Z]|\\[0-3][0-7]{2}|\\[^cux]|\((?:\?.)?|\)|\||\^|\$|\[\^?(?:\\.|[^\]])+\]|[\?\*\+][\?\+]?|\{\d+(?:,(?:\d+)?)?\}|\.|[^\\\.\?\*\+\(\)\{\}\[\]\^\$\|]+/g;
-		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+))?\}$/;
+		this.BRACE_QUANTIFIER_REGEX = /^\{\d+(?:,(?:\d+)?)?\}$/;
 		this.BRACKET_SUBTOKEN_REGEX = /\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}|\\c[A-Z]|\\[0-3][0-7]{2}|\\.|[^\]\\]/g;
 
 		// Since some of the quantifiers permit arbitrarily large numbers, let's pick a reasonably big one and go with that.
